@@ -1,0 +1,218 @@
+In ASP.NET Core, a custom handler 
+typically refers to an HTTP handler 
+that processes specific types of HTTP requests. 
+
+You can implement a custom handler through 
+middleware or by implementing custom request handling logic 
+within your application.
+
+Here are a few common ways 
+you might set up a custom handler:
+
+1. Custom Middleware
+
+A middleware in ASP.NET Core can intercept 
+HTTP requests and handle them according to your needs. 
+
+For example, you can use a custom middleware to 
+process requests, perform custom logic, 
+or even respond with custom content.
+
+public class CustomHandlerMiddleware
+{
+    private readonly RequestDelegate _next;
+
+    public CustomHandlerMiddleware(RequestDelegate next)
+    {
+        _next = next;
+    }
+
+    public async Task InvokeAsync(HttpContext context)
+    {
+        if (context.Request.Path.StartsWithSegments("/custom"))
+        {
+            context.Response.ContentType = "text/plain";
+            await context.Response.WriteAsync("This is a custom handler!");
+        }
+        else
+        {
+            await _next(context);
+        }
+    }
+}
+
+public static class CustomHandlerMiddlewareExtensions
+{
+    public static IApplicationBuilder UseCustomHandler(this IApplicationBuilder builder)
+    {
+        return builder.UseMiddleware<CustomHandlerMiddleware>();
+    }
+}
+
+You would register this middleware in 
+the Configure method of your Startup.cs 
+(or Program.cs in minimal hosting model):
+
+public void Configure(IApplicationBuilder app)
+{
+    app.UseRouting();
+
+    app.UseCustomHandler();  // Your custom handler here
+
+    app.UseEndpoints(endpoints =>
+    {
+        endpoints.MapControllers();
+    });
+}
+
+2. Custom Route Handler
+
+You can also define 
+custom route handlers in ASP.NET Core 
+using route constraints or 
+custom actions. 
+
+For example, you can use Map to 
+route specific paths to a custom handler.
+
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapGet("/custom", async context =>
+    {
+        await context.Response.WriteAsync("Handled by custom route!");
+    });
+});
+
+3. Custom Request Handler 
+with Middleware for Static Files
+
+If you want to serve a custom resource 
+(such as an image or document) from a specific endpoint, 
+you can write a handler to retrieve or generate that resource.
+
+public class CustomFileHandlerMiddleware
+{
+    private readonly RequestDelegate _next;
+
+    public CustomFileHandlerMiddleware(RequestDelegate next)
+    {
+        _next = next;
+    }
+
+    public async Task InvokeAsync(HttpContext context)
+    {
+        if (context.Request.Path.StartsWithSegments("/files"))
+        {
+            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "CustomFiles", "sample.txt");
+
+            if (File.Exists(filePath))
+            {
+                context.Response.ContentType = "text/plain";
+                await context.Response.SendFileAsync(filePath);
+            }
+            else
+            {
+                context.Response.StatusCode = StatusCodes.Status404NotFound;
+                await context.Response.WriteAsync("File not found.");
+            }
+        }
+        else
+        {
+            await _next(context);
+        }
+    }
+}
+
+Register this in Configure like so:
+
+public void Configure(IApplicationBuilder app)
+{
+    app.UseRouting();
+
+    app.UseMiddleware<CustomFileHandlerMiddleware>();
+
+    app.UseEndpoints(endpoints =>
+    {
+        endpoints.MapControllers();
+    });
+}
+
+4. Custom Response in a Controller
+
+If you're trying to handle 
+a specific request in a controller, 
+you can use a standard controller and method, 
+but with customized response logic.
+
+[ApiController]
+[Route("api/[controller]")]
+public class CustomController : ControllerBase
+{
+    [HttpGet]
+    [Route("custom-endpoint")]
+    public IActionResult GetCustom()
+    {
+        return Content("This is a custom response from the controller");
+    }
+}
+
+Има множество начини за прилагане на 
+custom handler в 
+зависимост от случая на използване. 
+
+Можете да използвате middleware за 
+прихващане и обработка на заявки или 
+можете да дефинирате персонализирани маршрути или 
+действия в контролерите, 
+за да обработвате конкретни пътища. 
+
+Кой подход избирате, 
+зависи от нивото на персонализиране и 
+естеството на вашето приложение. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
